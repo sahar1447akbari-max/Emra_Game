@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>For Emra</title>
+    <style>
+        html, body {
+            margin: 0; height: 100%; background: #000; overflow: hidden;
+            -webkit-user-select: none; user-select: none; touch-action: manipulation;
+        }
+        canvas { position: fixed; top: 0; left: 0; display: block; }
+        #stage {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            display: flex; align-items: center; justify-content: center;
+            font-family: Arial, sans-serif; font-weight: bold; font-size: 25vmin;
+            color: #ff4fa3; text-shadow: 0 0 20px #ff4fa3; z-index: 2;
+            text-align: center; padding: 0 4vmin; box-sizing: border-box;
+        }
+
+        /* ---------- Quiz card ---------- */
+        #quiz {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            display: none; align-items: center; justify-content: center;
+            background: rgba(0, 0, 20, 0.88); z-index: 5;
+        }
+        #quizCard, #prizeCard {
+            width: 84vmin; max-width: 92%; box-sizing: border-box;
+            background: #fff0f5; border-radius: 4vmin; padding: 5vmin;
+            text-align: center; font-family: Arial, sans-serif;
+            box-shadow: 0 0 25px rgba(255, 80, 160, 0.7);
+        }
+        button { font-family: Arial, sans-serif; }
+        #qCount { font-size: 3.6vmin; color: #b05a7c; margin-bottom: 2vmin; }
+        #qText { font-size: 5.6vmin; font-weight: bold; color: #e0457b; margin-bottom: 3.5vmin; }
+        .opt {
+            display: block; width: 100%; box-sizing: border-box;
+            font-size: 4.8vmin; padding: 2.2vmin 3vmin; margin-bottom: 2vmin;
+            border: 0.5vmin solid #e0457b; border-radius: 3vmin;
+            background: #fff; color: #d63b78; cursor: pointer; font-weight: bold;
+        }
+        .opt.correct { background: #5ad48a; border-color: #2e9e5b; color: #fff; }
+        .opt.wrong   { background: #ff6b81; border-color: #d63348; color: #fff; }
+        #nextBtn, #againBtn {
+            font-size: 4.5vmin; padding: 2vmin 5vmin; border: none; border-radius: 3vmin;
+            background: #e0457b; color: #fff; cursor: pointer; font-weight: bold;
+        }
+
+        /* ---------- Feedback after each answer ---------- */
+        #fbView, #giftView { display: none; }
+        #fbTitle { font-size: 6.5vmin; font-weight: bold; margin-bottom: 2vmin; }
+        #fbTitle.good { color: #2e9e5b; }
+        #fbTitle.bad  { color: #d63348; }
+        #fbImg {
+            display: none; max-width: 70vmin; max-height: 36vmin;
+            width: auto; height: auto; border-radius: 2vmin; margin-bottom: 2.5vmin;
+        }
+        #fbText {
+            font-size: 4.6vmin; color: #d63b78; font-weight: bold;
+            margin-bottom: 3vmin; line-height: 1.3;
+        }
+
+        /* ---------- Gift boxes ---------- */
+        #giftView .big { font-size: 7vmin; font-weight: bold; color: #e0457b; margin-bottom: 1.5vmin; }
+        #giftView .sub { font-size: 4.4vmin; color: #b05a7c; margin-bottom: 1.5vmin; }
+        #boxes { display: flex; justify-content: center; gap: 3vmin; margin-top: 3vmin; }
+        .gift {
+            border: 0.5vmin solid #e0457b; border-radius: 3vmin; background: #fff;
+            cursor: pointer; padding: 2vmin 2.5vmin;
+            animation: bob 1.4s ease-in-out infinite;
+        }
+        .gift:nth-child(2) { animation-delay: 0.2s; }
+        .gift:nth-child(3) { animation-delay: 0.4s; }
+        .gift .ico {
+            display: block; font-size: 13vmin; line-height: 1;
+            font-family: 'Segoe UI Emoji', 'Apple Color Emoji', 'Noto Color Emoji', sans-serif;
+        }
+        .gift .num { display: block; font-size: 4vmin; color: #d63b78; font-weight: bold; margin-top: 0.8vmin; }
+        @keyframes bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-1.6vmin); } }
+
+        /* ---------- Prize screen (video / flower) ---------- */
+        #prize {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            display: none; align-items: center; justify-content: center;
+            background: rgba(0, 0, 20, 0.92); z-index: 6;
+        }
+        #prizeTitle { font-size: 6.5vmin; font-weight: bold; color: #e0457b; margin-bottom: 2.5vmin; }
+        #prizeVideo {
+            display: none; width: 100%; max-height: 50vmin;
+            border-radius: 2vmin; background: #000; margin-bottom: 2.5vmin;
+        }
+        #prizeImg {
+            display: none; max-width: 70vmin; max-height: 45vmin;
+            width: auto; height: auto; border-radius: 2vmin; margin-bottom: 2.5vmin;
+        }
+        #prizeEmoji {
+            display: none; font-size: 28vmin; line-height: 1; margin-bottom: 2vmin;
+            font-family: 'Segoe UI Emoji', 'Apple Color Emoji', 'Noto Color Emoji', sans-serif;
+            animation: bloom 2s ease-out;
+        }
+        @keyframes bloom {
+            from { transform: scale(0.1) rotate(-30deg); opacity: 0; }
+            to   { transform: scale(1) rotate(0deg); opacity: 1; }
+        }
+        #prizeMissing { display: none; font-size: 4.5vmin; color: #b05a7c; margin-bottom: 2vmin; }
+        #prizeText {
+            font-family: 'Brush Script MT', 'Segoe Script', cursive;
+            font-size: 5.2vmin; line-height: 1.35; color: #d63b78;
+        }
+
+        /* ---------- Heart game ---------- */
+        #game {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            display: none; z-index: 5; overflow: hidden;
+            background: rgba(0, 0, 20, 0.55);
+        }
+        #hud {
+            position: absolute; top: 2vmin; left: 0; width: 100%;
+            display: flex; justify-content: space-between;
+            padding: 0 4vmin; box-sizing: border-box;
+            font-family: Arial, sans-serif; font-weight: bold;
+            font-size: 5.5vmin; color: #ff9ccc;
+            z-index: 3; pointer-events: none;
+        }
+        .heart {
+            position: absolute; top: -14vmin; line-height: 1; cursor: pointer;
+            font-family: 'Segoe UI Emoji', 'Apple Color Emoji', 'Noto Color Emoji', sans-serif;
+            animation-name: fall; animation-timing-function: linear;
+            animation-fill-mode: forwards;
+        }
+        @keyframes fall {
+            from { transform: translateY(0); }
+            to   { transform: translateY(125vh); }
+        }
+        .burst {
+            position: absolute; color: #fff; font-family: Arial, sans-serif;
+            font-weight: bold; font-size: 6vmin; pointer-events: none;
+            animation: rise 0.7s ease-out forwards;
+        }
+        @keyframes rise {
+            from { opacity: 1; transform: translateY(0); }
+            to   { opacity: 0; transform: translateY(-9vmin); }
+        }
+
+        /* ---------- Result card ---------- */
+        #result {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            display: none; align-items: center; justify-content: center;
+            background: rgba(0, 0, 20, 0.85); z-index: 7;
+        }
+        #resultCard {
+            width: 84vmin; max-width: 92%; box-sizing: border-box;
+            background: #fff0f5; border-radius: 4vmin; padding: 5vmin;
+            text-align: center; font-family: Arial, sans-serif;
+            box-shadow: 0 0 25px rgba(255, 80, 160, 0.7);
+        }
+        #resultCard .big { font-size: 6.5vmin; font-weight: bold; color: #e0457b; margin-bottom: 3vmin; }
+        #resultCard .msg {
+            font-family: 'Brush Script MT', 'Segoe Script', cursive;
+            font-size: 5vmin; line-height: 1.35; color: #d63b78; margin-bottom: 4vmin;
+        }
+    </style>
+</head>
+<body>
+<canvas id="rain"></canvas>
+<div id="stage"></div>
+
+<div id="quiz">
+    <div id="quizCard">
+
+        <div id="qView">
+            <div id="qCount"></div>
+            <div id="qText"></div>
+            <div id="qOptions"></div>
+        </div>
+
+        <div id="fbView">
+            <div id="fbTitle"></div>
+            <img id="fbImg" alt="">
+            <div id="fbText"></div>
+            <button id="nextBtn">Next</button>
+        </div>
+
+        <div id="giftView">
+            <div class="big">You won! &#x1F389;</div>
+            <div class="sub" id="giftSub"></div>
+            <div class="sub">Choose one gift</div>
+            <div id="boxes">
+                <button class="gift" data-n="1"><span class="ico">&#x1F381;</span><span class="num">1</span></button>
+                <button class="gift" data-n="2"><span class="ico">&#x1F381;</span><span class="num">2</span></button>
+                <button class="gift" data-n="3"><span class="ico">&#x1F381;</span><span class="num">3</span></button>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<div id="prize">
+    <div id="prizeCard">
+        <div id="prizeTitle"></div>
+        <video id="prizeVideo" controls playsinline autoplay></video>
+        <img id="prizeImg" alt="">
+        <div id="prizeEmoji"></div>
+        <div id="prizeMissing"></div>
+        <div id="prizeText"></div>
+    </div>
+</div>
+
+<div id="game">
+    <div id="hud">
+        <div id="scoreBox"></div>
+        <div id="timeBox"></div>
+    </div>
+</div>
+
+<div id="result">
+    <div id="resultCard">
+        <div class="big">You caught <span id="finalScore">0</span> hearts! &#x1F496;</div>
+        <div class="msg">Emra, thank you for being the best friend in the world. I love you!</div>
+        <button id="againBtn">Play again</button>
+    </div>
+</div>
+
+<script>
+    // ---------- Emoji written as code numbers (so they never break) ----------
+    const E_SPARKLE = String.fromCodePoint(0x1F496);
+    const E_GROW    = String.fromCodePoint(0x1F497);
+    const E_TWO     = String.fromCodePoint(0x1F495);
+    const E_RED     = String.fromCodePoint(0x2764, 0xFE0F);
+    const E_ARROW   = String.fromCodePoint(0x1F498);
+    const E_PARTY   = String.fromCodePoint(0x1F389);
+    const E_TONGUE  = String.fromCodePoint(0x1F61C);
+    const E_ANGRY   = String.fromCodePoint(0x1F624);
+    const E_BROKEN  = String.fromCodePoint(0x1F494);
+    const E_SNOW    = String.fromCodePoint(0x2744, 0xFE0F);
+    const E_CAT     = String.fromCodePoint(0x1F431);
+    const E_GHOST   = String.fromCodePoint(0x1F47B);
+    const E_KISS    = String.fromCodePoint(0x1F618);
+    const E_ROSE    = String.fromCodePoint(0x1F339);
+    const hearts = [E_SPARKLE, E_GROW, E_TWO, E_RED, E_ARROW];
+
+    // ---------- Letter rain ----------
+    const canvas = document.getElementById('rain');
+    const ctx = canvas.getContext('2d');
+    const letters = 'EMRABESTFRIEND'.split('');
+    const fontSize = 16;
+    let drops = [];
+
+    function setup() {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        drops = [];
+        const columns = Math.floor(canvas.width / fontSize);
+        for (let i = 0; i < columns; i++) {
+            drops.push(Math.random() * -50);
+        }
+    }
+    setup();
+    window.addEventListener('resize', setup);
+
+    function drawRain() {
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.08)';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = '#ff2d8f';
+        ctx.font = fontSize + 'px monospace';
+        for (let i = 0; i < drops.length; i++) {
+            const ch = letters[Math.floor(Math.random() * letters.length)];
+            ctx.fillText(ch, i * fontSize, drops[i] * fontSize);
+            if (drops[i] * fontSize > canvas.height && Math.random() > 0.975) {
+                drops[i] = 0;
+            }
+            drops[i]++;
+        }
+    }
+    setInterval(drawRain, 50);
+
+    // ---------- Helpers: load an image / video, trying several file extensions ----------
+    function loadImage(img, base, onFail) {
+        const exts = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'JPG', 'JPEG', 'PNG', 'GIF'];
+        let i = 0;
+        img.style.display = 'none';
+        img.onload = function () { img.style.display = 'inline-block'; };
+        img.onerror = next;
+        function next() {
+            if (i >= exts.length) {
+                img.onerror = null;
+                if (onFail) onFail();
+                return;
+            }
+            img.src = base + '.' + exts[i];
+            i++;
+        }
+        next();
+    }
+
+    function loadVideo(v, base, onFail) {
+        const exts = ['mp4', 'webm', 'mov', 'MP4', 'MOV', 'WEBM'];
+        let i = 0;
+        v.style.display = 'block';
+        v.onerror = next;
+        function next() {
+            if (i >= exts.length) {
+                v.onerror = null;
+                v.style.display = 'none';
+                if (onFail) onFail();
+                return;
+            }
+            v.src = base + '.' + exts[i];
+            i++;
+            v.load();
+            const p = v.play();
+            if (p && p.catch) p.catch(function () {});
+        }
+        next();
+    }
+
+    // ---------- Quiz ----------
+    // Images for each question: q1_right, q1_wrong, q2_right, q2_wrong ... q5_right, q5_wrong
+    const questions = [
+        { q: 'What is my favorite color?',
+            options: ['Pink', 'Black', 'Blue'], answer: 1,
+            right: 'Yes! You know me so well! ' + E_SPARKLE,
+            wrong: 'Wrong! Are you even my best friend?! ' + E_ANGRY },
+        { q: 'What is my favorite food?',
+            options: ['Ashak', 'Aash', 'Noodles'], answer: 2,
+            right: 'Noodles forever! You are the best! ' + E_SPARKLE,
+            wrong: 'Wrong! My noodles are crying right now ' + E_BROKEN },
+        { q: 'What is my favorite season?',
+            options: ['Summer', 'Spring', 'Winter'], answer: 2,
+            right: 'Correct! Winter is our season ' + E_SNOW,
+            wrong: 'Wrong! Winter is offended, and so am I ' + E_SNOW },
+        { q: 'What is my favorite animal?',
+            options: ['Dog', 'Cat', 'Rabbit'], answer: 1,
+            right: 'Meow! You got it ' + E_CAT,
+            wrong: 'Wrong! The cats are judging you right now ' + E_CAT },
+        { q: 'What kind of movies do I love?',
+            options: ['Romance', 'Comedy', 'Horror'], answer: 2,
+            right: 'Yes! Horror night is on ' + E_GHOST,
+            wrong: 'Wrong! This is scarier than any horror movie ' + E_GHOST }
+    ];
+    let qIndex = 0;
+    let quizScore = 0;
+
+    function setView(name) {
+        ['qView', 'fbView', 'giftView'].forEach(function (id) {
+            document.getElementById(id).style.display = (id === name) ? 'block' : 'none';
+        });
+    }
+
+    function showQuestion() {
+        const item = questions[qIndex];
+        document.getElementById('qCount').textContent =
+            'Question ' + (qIndex + 1) + ' of ' + questions.length;
+        document.getElementById('qText').textContent = item.q;
+        const box = document.getElementById('qOptions');
+        box.innerHTML = '';
+        item.options.forEach(function (text, i) {
+            const b = document.createElement('button');
+            b.className = 'opt';
+            b.textContent = text;
+            b.addEventListener('click', function () { answerQuestion(i); });
+            box.appendChild(b);
+        });
+        setView('qView');
+    }
+
+    function answerQuestion(i) {
+        const item = questions[qIndex];
+        const btns = document.querySelectorAll('#qOptions .opt');
+        btns.forEach(function (b) { b.disabled = true; });
+        btns[item.answer].classList.add('correct');
+        const correct = (i === item.answer);
+        if (correct) {
+            quizScore++;
+        } else {
+            btns[i].classList.add('wrong');
+        }
+        setTimeout(function () { showFeedback(correct); }, 900);
+    }
+
+    function showFeedback(correct) {
+        const item = questions[qIndex];
+        const title = document.getElementById('fbTitle');
+        title.textContent = correct ? ('Correct! ' + E_PARTY) : ('Wrong! ' + E_TONGUE);
+        title.className = correct ? 'good' : 'bad';
+        document.getElementById('fbText').textContent = correct ? item.right : item.wrong;
+        loadImage(document.getElementById('fbImg'),
+            'q' + (qIndex + 1) + (correct ? '_right' : '_wrong'));
+        document.getElementById('nextBtn').textContent =
+            (qIndex === questions.length - 1) ? 'See my gifts' : 'Next';
+        setView('fbView');
+    }
+
+    document.getElementById('nextBtn').addEventListener('click', function () {
+        qIndex++;
+        if (qIndex < questions.length) {
+            showQuestion();
+        } else {
+            showGifts();
+        }
+    });
+
+    function showGifts() {
+        document.getElementById('giftSub').textContent =
+            'You got ' + quizScore + ' / ' + questions.length + ' ' + E_SPARKLE;
+        setView('giftView');
+    }
+
+    function startQuiz() {
+        stage.textContent = '';
+        qIndex = 0;
+        quizScore = 0;
+        document.getElementById('quiz').style.display = 'flex';
+        showQuestion();
+    }
+
+    // ---------- Gift boxes ----------
+    function openGift(n) {
+        document.getElementById('quiz').style.display = 'none';
+
+        if (n === 1) {            // box 1: the heart game
+            startGame();
+            return;
+        }
+
+        const prize = document.getElementById('prize');
+        const video = document.getElementById('prizeVideo');
+        const img = document.getElementById('prizeImg');
+        const emoji = document.getElementById('prizeEmoji');
+        const missing = document.getElementById('prizeMissing');
+        video.style.display = 'none';
+        img.style.display = 'none';
+        emoji.style.display = 'none';
+        missing.style.display = 'none';
+
+        if (n === 2) {            // box 2: the kiss video (file: kiss.mp4)
+            document.getElementById('prizeTitle').textContent = 'A kiss for you ' + E_KISS;
+            document.getElementById('prizeText').textContent = 'Sending you a big kiss!';
+            loadVideo(video, 'kiss', function () {
+                missing.textContent = '(kiss video not found)';
+                missing.style.display = 'block';
+            });
+        } else {                  // box 3: a flower (file: flower.jpg, or an emoji flower)
+            document.getElementById('prizeTitle').textContent = 'A flower for you ' + E_ROSE;
+            document.getElementById('prizeText').textContent =
+                'A flower for the best friend in the world!';
+            emoji.textContent = E_ROSE;
+            loadImage(img, 'flower', function () {
+                emoji.style.display = 'block';
+            });
+        }
+        prize.style.display = 'flex';
+    }
+
+    document.querySelectorAll('.gift').forEach(function (b) {
+        b.addEventListener('click', function () {
+            openGift(parseInt(b.getAttribute('data-n'), 10));
+        });
+    });
+
+    // ---------- Heart game ----------
+    const game = document.getElementById('game');
+    let score = 0;
+    let timeLeft = 30;
+    let playing = false;
+    let spawnTimer = null;
+    let clockTimer = null;
+
+    function updateHud() {
+        document.getElementById('scoreBox').textContent = E_SPARKLE + ' ' + score;
+        document.getElementById('timeBox').textContent = 'Time: ' + timeLeft;
+    }
+
+    function burst(h) {
+        const r = h.getBoundingClientRect();
+        const b = document.createElement('div');
+        b.className = 'burst';
+        b.textContent = '+1';
+        b.style.left = r.left + 'px';
+        b.style.top = r.top + 'px';
+        game.appendChild(b);
+        setTimeout(function () { b.remove(); }, 700);
+    }
+
+    function spawnHeart() {
+        const h = document.createElement('div');
+        h.className = 'heart';
+        h.textContent = hearts[Math.floor(Math.random() * hearts.length)];
+        h.style.left = (5 + Math.random() * 85) + '%';
+        h.style.fontSize = (8 + Math.random() * 5) + 'vmin';
+        h.style.animationDuration = (3 + Math.random() * 2.5) + 's';
+        h.addEventListener('pointerdown', function (e) {
+            e.preventDefault();
+            if (!playing || h.dataset.done) return;
+            h.dataset.done = '1';
+            score++;
+            updateHud();
+            burst(h);
+            h.remove();
+        });
+        h.addEventListener('animationend', function () { h.remove(); });
+        game.appendChild(h);
+    }
+
+    function clearHearts() {
+        game.querySelectorAll('.heart').forEach(function (x) { x.remove(); });
+    }
+
+    function startGame() {
+        score = 0;
+        timeLeft = 30;
+        playing = true;
+        document.getElementById('result').style.display = 'none';
+        clearHearts();
+        updateHud();
+        game.style.display = 'block';
+        spawnTimer = setInterval(spawnHeart, 550);
+        clockTimer = setInterval(function () {
+            timeLeft--;
+            updateHud();
+            if (timeLeft <= 0) endGame();
+        }, 1000);
+    }
+
+    function endGame() {
+        playing = false;
+        clearInterval(spawnTimer);
+        clearInterval(clockTimer);
+        clearHearts();
+        document.getElementById('finalScore').textContent = score;
+        document.getElementById('result').style.display = 'flex';
+    }
+
+    document.getElementById('againBtn').addEventListener('click', startGame);
+
+    // ---------- Countdown + words ----------
+    const stage = document.getElementById('stage');
+    const steps = [
+        { text: '3',          size: '25vmin', delay: 1000 },
+        { text: '2',          size: '25vmin', delay: 1000 },
+        { text: '1',          size: '25vmin', delay: 1000 },
+        { text: 'Hey',        size: '14vmin', delay: 1300 },
+        { text: 'EMRA',       size: '20vmin', delay: 1800 },
+        { text: 'Quiz time!', size: '12vmin', delay: 1800 }
+    ];
+    let index = 0;
+
+    function showNext() {
+        if (index < steps.length) {
+            stage.style.fontSize = steps[index].size;
+            stage.textContent = steps[index].text;
+            const wait = steps[index].delay;
+            index++;
+            setTimeout(showNext, wait);
+        } else {
+            startQuiz();
+        }
+    }
+    showNext();
+</script>
+</body>
+</html>
